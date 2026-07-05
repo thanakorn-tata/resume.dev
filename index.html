@@ -7,251 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ink:#132436;
-    --ink-soft:#2c4256;
-    --slate:#5c6f81;
-    --paper:#faf9f6;
-    --panel:#ffffff;
-    --line:#e2e5e8;
-    --gold:#a9884f;
-    --gold-soft:#d9c79a;
-    --sidebar:#132436;
-    --sidebar-text:#dfe6ec;
-    --sidebar-sub:#8fa2b3;
-    --danger:#b3543f;
-    --radius:2px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'IBM Plex Sans','IBM Plex Sans Thai',sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
-  body.lang-th{ font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif; }
-
-  /* ---------- App shell ---------- */
-  .app{ max-width:980px; margin:0 auto; padding:28px 20px 80px; }
-
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom:28px; padding-bottom:18px; border-bottom:1px solid var(--line);
-  }
-  .brand{ display:flex; align-items:center; gap:10px; }
-  .brand-mark{
-    width:30px; height:30px; border:1.5px solid var(--ink); border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:var(--ink);
-    flex-shrink:0;
-  }
-  .brand-name{ font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--slate); font-weight:500;}
-  .lang-toggle{ display:flex; border:1px solid var(--ink); border-radius:20px; overflow:hidden; }
-  .lang-toggle button{
-    border:none; background:transparent; padding:7px 18px; font-size:13px; cursor:pointer;
-    font-family:inherit; color:var(--ink); font-weight:500; transition:.15s;
-  }
-  .lang-toggle button.active{ background:var(--ink); color:#fff; }
-
-  h1.page-title{ font-size:26px; margin:0 0 4px; font-weight:600; letter-spacing:-.01em; }
-  p.page-sub{ margin:0 0 30px; color:var(--slate); font-size:14.5px; line-height:1.6; }
-
-  /* ---------- Form ---------- */
-  .section{
-    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
-    padding:24px 26px; margin-bottom:18px;
-  }
-  .section-head{
-    display:flex; align-items:baseline; gap:10px; margin-bottom:18px;
-  }
-  .section-num{
-    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gold); font-weight:500;
-  }
-  .section-title{ font-size:16px; font-weight:600; margin:0; }
-
-  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
-  @media (max-width:640px){ .grid2,.grid3{ grid-template-columns:1fr; } }
-
-  .field{ margin-bottom:14px; }
-  .field label{
-    display:block; font-size:12.5px; font-weight:500; color:var(--slate);
-    margin-bottom:6px; letter-spacing:.02em;
-  }
-  .field input, .field textarea{
-    width:100%; border:1px solid var(--line); border-radius:var(--radius);
-    padding:10px 12px; font-size:14.5px; font-family:inherit; color:var(--ink);
-    background:#fff; transition:border-color .15s;
-  }
-  .field input:focus, .field textarea:focus{
-    outline:none; border-color:var(--ink);
-  }
-  .field textarea{ resize:vertical; min-height:70px; line-height:1.55; }
-  .hint{ font-size:11.5px; color:#93a0ab; margin-top:5px; }
-
-  .repeat-item{
-    border:1px solid var(--line); border-radius:var(--radius); padding:18px 18px 6px;
-    margin-bottom:14px; position:relative; background:#fdfdfc;
-  }
-  .repeat-item .remove-btn{
-    position:absolute; top:10px; right:10px; background:none; border:none;
-    color:var(--danger); font-size:12px; cursor:pointer; font-family:inherit;
-    opacity:.7;
-  }
-  .repeat-item .remove-btn:hover{ opacity:1; }
-
-  .add-btn{
-    display:inline-flex; align-items:center; gap:6px; background:none; cursor:pointer;
-    border:1px dashed #c3cbd2; color:var(--ink-soft); padding:9px 16px; border-radius:var(--radius);
-    font-size:13px; font-family:inherit; font-weight:500; width:100%; justify-content:center;
-    transition:.15s;
-  }
-  .add-btn:hover{ border-color:var(--ink); background:#f3f5f6; }
-
-  .tag-input-wrap{
-    border:1px solid var(--line); border-radius:var(--radius); padding:8px; display:flex; flex-wrap:wrap; gap:6px;
-  }
-  .tag{
-    background:var(--ink); color:#fff; font-size:12.5px; padding:5px 10px 5px 12px; border-radius:14px;
-    display:flex; align-items:center; gap:6px;
-  }
-  .tag button{ background:none; border:none; color:#cdd7e0; cursor:pointer; font-size:13px; line-height:1; padding:0;}
-  .tag-input-wrap input{ border:none; flex:1; min-width:120px; padding:5px; font-size:13.5px; font-family:inherit; }
-  .tag-input-wrap input:focus{ outline:none; }
-
-  .submit-row{ display:flex; justify-content:flex-end; gap:12px; margin-top:24px; }
-  .btn{
-    font-family:inherit; font-size:14px; font-weight:600; padding:13px 28px; border-radius:var(--radius);
-    cursor:pointer; border:1px solid var(--ink); letter-spacing:.02em;
-  }
-  .btn-primary{ background:var(--ink); color:#fff; }
-  .btn-primary:hover{ background:var(--ink-soft); }
-  .btn-ghost{ background:transparent; color:var(--ink); }
-  .btn-ghost:hover{ background:#f2f3f4; }
-
-  /* ---------- Resume Output ---------- */
-  #resumeScreen{ display:none; }
-  .resume-toolbar{
-    display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;
-  }
-  .resume-toolbar .left{ font-size:13px; color:var(--slate); }
-  .resume-toolbar .actions{ display:flex; gap:10px; }
-
-  .template-toggle{ display:flex; border:1px solid var(--ink); border-radius:20px; overflow:hidden; }
-  .template-toggle button{
-    border:none; background:transparent; padding:7px 16px; font-size:12.5px; cursor:pointer;
-    font-family:inherit; color:var(--ink); font-weight:500; transition:.15s;
-  }
-  .template-toggle button.active{ background:var(--ink); color:#fff; }
-
-  /* ---- shared sheet ---- */
-  .resume-sheet{
-    background:#fff; border:1px solid var(--line);
-    width:100%; max-width:800px; margin:0 auto;
-    min-height:1050px;
-    box-shadow:0 1px 3px rgba(19,36,54,.06);
-  }
-
-  /* ==================================================
-     CLASSIC TEMPLATE — single column, serif, Harvard-style
-     ================================================== */
-  .tpl-classic{
-    font-family:'EB Garamond','Noto Serif Thai',serif;
-    color:#1a1a1a;
-    padding:56px 64px;
-  }
-  body.lang-th .tpl-classic{ font-family:'Noto Serif Thai','EB Garamond',serif; }
-
-  .tpl-classic .c-name{
-    text-align:center; font-size:24px; font-weight:700; letter-spacing:.02em;
-    margin:0 0 6px;
-  }
-  .tpl-classic .c-contact{
-    text-align:center; font-size:13px; color:#2a2a2a; line-height:1.6; margin-bottom:2px;
-  }
-  .tpl-classic .c-contact a{ color:#2a2a2a; text-decoration:none; }
-  .tpl-classic .c-title{
-    text-align:center; font-size:13px; font-style:italic; color:#444; margin-bottom:4px;
-  }
-
-  .tpl-classic .c-section{ margin-top:22px; }
-  .tpl-classic .c-section-title{
-    text-align:center; font-size:14px; font-weight:700; letter-spacing:.08em;
-    text-transform:uppercase; margin-bottom:10px; padding-bottom:6px;
-    border-bottom:1.4px solid #1a1a1a;
-  }
-
-  .tpl-classic .c-summary{ font-size:13.5px; line-height:1.75; color:#2a2a2a; }
-
-  .tpl-classic .c-entry{ margin-bottom:14px; }
-  .tpl-classic .c-entry:last-child{ margin-bottom:0; }
-  .tpl-classic .c-entry-row{
-    display:flex; justify-content:space-between; align-items:baseline; gap:12px;
-  }
-  .tpl-classic .c-entry-org{ font-size:13.5px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; }
-  .tpl-classic .c-entry-period{ font-size:12.5px; font-weight:600; white-space:nowrap; }
-  .tpl-classic .c-entry-role{ font-size:13px; font-style:italic; color:#333; margin:1px 0 6px; }
-  .tpl-classic .c-entry ul{ margin:0; padding-left:20px; }
-  .tpl-classic .c-entry li{ font-size:13px; line-height:1.65; color:#232323; margin-bottom:3px; }
-  .tpl-classic .c-entry .c-plain{ font-size:13px; line-height:1.7; color:#232323; }
-
-  .tpl-classic .c-skills-line, .tpl-classic .c-lang-line{
-    font-size:13px; line-height:1.9; color:#232323;
-  }
-  .tpl-classic .c-skills-line b, .tpl-classic .c-lang-line b{ font-weight:700; }
-
-  /* ==================================================
-     MODERN TEMPLATE — sidebar layout
-     ================================================== */
-  .tpl-modern{
-    display:grid; grid-template-columns:270px 1fr;
-  }
-  .r-sidebar{
-    background:var(--sidebar); color:var(--sidebar-text); padding:38px 26px;
-  }
-  .r-name{ font-size:24px; font-weight:600; line-height:1.25; margin:0 0 2px; letter-spacing:-.01em; }
-  .r-title{ font-size:13px; color:var(--gold-soft); font-weight:500; margin:0 0 26px; letter-spacing:.03em; text-transform:uppercase; }
-  .r-block{ margin-bottom:26px; }
-  .r-block-title{
-    font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--sidebar-sub);
-    font-weight:600; margin-bottom:12px; border-bottom:1px solid #2c4256; padding-bottom:8px;
-  }
-  .r-contact-item{ font-size:12.5px; line-height:1.7; word-break:break-word; color:var(--sidebar-text); }
-  .r-skill-row{ font-size:12.5px; margin-bottom:9px; color:var(--sidebar-text); }
-  .r-skill-bar{ height:3px; background:#2c4256; border-radius:2px; margin-top:5px; overflow:hidden; }
-  .r-skill-fill{ height:100%; background:var(--gold-soft); }
-  .r-lang-row{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; color:var(--sidebar-text); }
-  .r-lang-row span:last-child{ color:var(--sidebar-sub); }
-
-  .r-main{ padding:38px 34px; }
-  .r-main .r-block{ margin-bottom:24px; }
-  .r-main .r-block-title{
-    font-size:12.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--gold);
-    font-weight:600; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--line);
-  }
-  .r-summary{ font-size:13.5px; line-height:1.75; color:var(--ink-soft); }
-
-  .r-entry{ margin-bottom:16px; }
-  .r-entry:last-child{ margin-bottom:0; }
-  .r-entry-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:2px;}
-  .r-entry-role{ font-size:14px; font-weight:600; color:var(--ink); }
-  .r-entry-period{ font-size:11.5px; color:var(--slate); font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
-  .r-entry-org{ font-size:13px; color:var(--gold); font-weight:500; margin-bottom:5px; }
-  .r-entry-desc{ font-size:12.8px; line-height:1.7; color:var(--ink-soft); white-space:pre-line; }
-
-  .empty-note{ font-size:12px; color:#aab4bc; font-style:italic; }
-
-  @media print{
-    body *{ visibility:hidden; }
-    #resumeScreen, #resumeScreen *{ visibility:visible; }
-    #resumeScreen{ position:absolute; left:0; top:0; width:100%; display:block !important; }
-    .resume-toolbar{ display:none !important; }
-    .resume-sheet{ box-shadow:none; border:none; max-width:100%; }
-    .app{ padding:0; max-width:100%; }
-  }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body class="lang-th">
 <div class="app">
@@ -348,6 +104,20 @@
         <button type="button" class="add-btn" onclick="addLanguage()" data-t="addLang">+ เพิ่มภาษา</button>
       </div>
 
+      <!-- Certificates -->
+      <div class="section">
+        <div class="section-head"><span class="section-num">07</span><h2 class="section-title" data-t="secCerts">ใบรับรอง / ประกาศนียบัตร</h2></div>
+        <div id="certList"></div>
+        <button type="button" class="add-btn" onclick="addCert()" data-t="addCert">+ เพิ่มใบรับรอง</button>
+      </div>
+
+      <!-- Portfolio / Projects -->
+      <div class="section">
+        <div class="section-head"><span class="section-num">08</span><h2 class="section-title" data-t="secPortfolio">ผลงาน</h2></div>
+        <div id="portfolioList"></div>
+        <button type="button" class="add-btn" onclick="addPortfolio()" data-t="addPortfolio">+ เพิ่มผลงาน</button>
+      </div>
+
       <div class="submit-row">
         <button type="button" class="btn btn-primary" onclick="generateResume()" data-t="btnGenerate">สร้างเรซูเม่</button>
       </div>
@@ -396,7 +166,12 @@ const UI_TEXT = {
     rExperience:"ประสบการณ์ทำงาน", rEducation:"การศึกษา",
     placeholderName:"ชื่อ-นามสกุล", placeholderTitle:"ตำแหน่งงานที่ต้องการ",
     levelOptions:["เริ่มต้น","ปานกลาง","ดี","คล่องแคล่ว","เจ้าของภาษา"],
-    tplClassic:"คลาสสิก", tplModern:"โมเดิร์น"
+    tplClassic:"คลาสสิก", tplModern:"โมเดิร์น",
+    secCerts:"ใบรับรอง / ประกาศนียบัตร", addCert:"+ เพิ่มใบรับรอง",
+    certName:"ชื่อใบรับรอง / หลักสูตร", certIssuer:"ออกโดย (สถาบัน/องค์กร)", certDate:"วันที่ได้รับ", certLink:"ลิงก์ตรวจสอบ (ถ้ามี)",
+    secPortfolio:"ผลงาน", addPortfolio:"+ เพิ่มผลงาน",
+    portfolioName:"ชื่อผลงาน / โปรเจกต์", portfolioLink:"ลิงก์ผลงาน (เว็บไซต์, GitHub, Behance ฯลฯ)", portfolioDesc:"รายละเอียดผลงานโดยย่อ",
+    rCerts:"ใบรับรอง", rPortfolio:"ผลงาน"
   },
   en:{
     formTitle:"Build Your Resume",
@@ -420,7 +195,12 @@ const UI_TEXT = {
     rExperience:"Experience", rEducation:"Education",
     placeholderName:"Your Name", placeholderTitle:"Desired Job Title",
     levelOptions:["Basic","Intermediate","Good","Fluent","Native"],
-    tplClassic:"Classic", tplModern:"Modern"
+    tplClassic:"Classic", tplModern:"Modern",
+    secCerts:"Certificates", addCert:"+ Add Certificate",
+    certName:"Certificate / Course Name", certIssuer:"Issued By (Institution/Organization)", certDate:"Date Received", certLink:"Verification Link (optional)",
+    secPortfolio:"Portfolio", addPortfolio:"+ Add Project",
+    portfolioName:"Project Name", portfolioLink:"Project Link (website, GitHub, Behance, etc.)", portfolioDesc:"Short Description",
+    rCerts:"Certificates", rPortfolio:"Portfolio"
   }
 };
 let uiLang = 'th';
@@ -552,6 +332,68 @@ function addLanguage(){
   document.getElementById('langList').appendChild(div);
 }
 
+/* ---------------- Repeatable: Certificates ---------------- */
+let certCount = 0;
+function addCert(){
+  certCount++;
+  const id = 'cert'+certCount;
+  const div = document.createElement('div');
+  div.className = 'repeat-item';
+  div.id = id;
+  div.innerHTML = `
+    <button type="button" class="remove-btn dyn-remove" onclick="document.getElementById('${id}').remove()">${t('remove')}</button>
+    <div class="grid2">
+      <div class="field">
+        <label class="dyn-label" data-key="certName">${t('certName')}</label>
+        <input type="text" class="cert-name dyn-ph" data-key="certName" placeholder="${t('certName')}">
+      </div>
+      <div class="field">
+        <label class="dyn-label" data-key="certIssuer">${t('certIssuer')}</label>
+        <input type="text" class="cert-issuer dyn-ph" data-key="certIssuer" placeholder="${t('certIssuer')}">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label class="dyn-label" data-key="certDate">${t('certDate')}</label>
+        <input type="text" class="cert-date dyn-ph" data-key="certDate" placeholder="${t('certDate')}">
+      </div>
+      <div class="field">
+        <label class="dyn-label" data-key="certLink">${t('certLink')}</label>
+        <input type="text" class="cert-link dyn-ph" data-key="certLink" placeholder="${t('certLink')}">
+      </div>
+    </div>
+  `;
+  document.getElementById('certList').appendChild(div);
+}
+
+/* ---------------- Repeatable: Portfolio / Projects ---------------- */
+let portfolioCount = 0;
+function addPortfolio(){
+  portfolioCount++;
+  const id = 'portfolio'+portfolioCount;
+  const div = document.createElement('div');
+  div.className = 'repeat-item';
+  div.id = id;
+  div.innerHTML = `
+    <button type="button" class="remove-btn dyn-remove" onclick="document.getElementById('${id}').remove()">${t('remove')}</button>
+    <div class="grid2">
+      <div class="field">
+        <label class="dyn-label" data-key="portfolioName">${t('portfolioName')}</label>
+        <input type="text" class="portfolio-name dyn-ph" data-key="portfolioName" placeholder="${t('portfolioName')}">
+      </div>
+      <div class="field">
+        <label class="dyn-label" data-key="portfolioLink">${t('portfolioLink')}</label>
+        <input type="text" class="portfolio-link dyn-ph" data-key="portfolioLink" placeholder="${t('portfolioLink')}">
+      </div>
+    </div>
+    <div class="field">
+      <label class="dyn-label" data-key="portfolioDesc">${t('portfolioDesc')}</label>
+      <textarea class="portfolio-desc dyn-ph" data-key="portfolioDesc" placeholder="${t('portfolioDesc')}"></textarea>
+    </div>
+  `;
+  document.getElementById('portfolioList').appendChild(div);
+}
+
 /* ---------------- Skills tags ---------------- */
 function commitSkillText(input){
   const raw = input.value;
@@ -619,13 +461,26 @@ function collectResumeData(){
     level: el.querySelector('.lang-level').value
   })).filter(l=> l.name);
 
+  const certs = Array.from(document.querySelectorAll('#certList .repeat-item')).map(el=>({
+    name: el.querySelector('.cert-name').value.trim(),
+    issuer: el.querySelector('.cert-issuer').value.trim(),
+    date: el.querySelector('.cert-date').value.trim(),
+    link: el.querySelector('.cert-link').value.trim()
+  })).filter(c=> c.name || c.issuer);
+
+  const portfolio = Array.from(document.querySelectorAll('#portfolioList .repeat-item')).map(el=>({
+    name: el.querySelector('.portfolio-name').value.trim(),
+    link: el.querySelector('.portfolio-link').value.trim(),
+    desc: el.querySelector('.portfolio-desc').value.trim()
+  })).filter(p=> p.name);
+
   const contactRows = [];
   if(email) contactRows.push(email);
   if(phone) contactRows.push(phone);
   if(location) contactRows.push(location);
   if(link) contactRows.push(link);
 
-  return { name, title, contactRows, summary, experiences, education, languages, skills: skills.slice() };
+  return { name, title, contactRows, summary, experiences, education, languages, certs, portfolio, skills: skills.slice() };
 }
 
 /* turn a textarea's line breaks into bullet points */
@@ -684,6 +539,20 @@ function renderClassic(d){
         `).join('')}
       </div>` : ''}
 
+      ${d.portfolio.length ? `
+      <div class="c-section">
+        <div class="c-section-title">${t('rPortfolio')}</div>
+        ${d.portfolio.map(p=>`
+          <div class="c-entry">
+            <div class="c-entry-row">
+              <span class="c-entry-org">${escapeHtml(p.name)}</span>
+            </div>
+            ${p.link ? `<div class="c-plain" style="margin-bottom:4px;">${escapeHtml(p.link)}</div>` : ''}
+            ${bulletsOrPlain(p.desc)}
+          </div>
+        `).join('')}
+      </div>` : ''}
+
       ${d.skills.length ? `
       <div class="c-section">
         <div class="c-section-title">${t('rSkills')}</div>
@@ -694,6 +563,21 @@ function renderClassic(d){
       <div class="c-section">
         <div class="c-section-title">${t('rLanguages')}</div>
         <div class="c-lang-line">${d.languages.map(l=>`<b>${escapeHtml(l.name)}</b> (${escapeHtml(l.level)})`).join(' &nbsp;•&nbsp; ')}</div>
+      </div>` : ''}
+
+      ${d.certs.length ? `
+      <div class="c-section">
+        <div class="c-section-title">${t('rCerts')}</div>
+        ${d.certs.map(c=>`
+          <div class="c-entry">
+            <div class="c-entry-row">
+              <span class="c-entry-org">${escapeHtml(c.name)}</span>
+              <span class="c-entry-period">${escapeHtml(c.date)}</span>
+            </div>
+            ${c.issuer ? `<div class="c-entry-role">${escapeHtml(c.issuer)}</div>` : ''}
+            ${c.link ? `<div class="c-plain">${escapeHtml(c.link)}</div>` : ''}
+          </div>
+        `).join('')}
       </div>` : ''}
     </div>
   `;
@@ -725,6 +609,17 @@ function renderModern(d){
             <div class="r-lang-row"><span>${escapeHtml(l.name)}</span><span>${escapeHtml(l.level)}</span></div>
           `).join('') : `<div class="empty-note">—</div>`}
         </div>
+
+        ${d.certs.length ? `
+        <div class="r-block">
+          <div class="r-block-title">${t('rCerts')}</div>
+          ${d.certs.map(c=>`
+            <div class="r-contact-item" style="margin-bottom:8px;">
+              <strong style="display:block;color:#fff;">${escapeHtml(c.name)}</strong>
+              ${c.issuer ? escapeHtml(c.issuer) + (c.date ? ' — ' + escapeHtml(c.date) : '') : escapeHtml(c.date)}
+            </div>
+          `).join('')}
+        </div>` : ''}
       </div>
 
       <div class="r-main">
@@ -761,6 +656,20 @@ function renderModern(d){
             </div>
           `).join('') : `<div class="empty-note">—</div>`}
         </div>
+
+        ${d.portfolio.length ? `
+        <div class="r-block">
+          <div class="r-block-title">${t('rPortfolio')}</div>
+          ${d.portfolio.map(p=>`
+            <div class="r-entry">
+              <div class="r-entry-head">
+                <span class="r-entry-role">${escapeHtml(p.name)}</span>
+              </div>
+              ${p.link ? `<div class="r-entry-org">${escapeHtml(p.link)}</div>` : ''}
+              ${p.desc ? `<div class="r-entry-desc">${escapeHtml(p.desc)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>` : ''}
       </div>
     </div>
   `;
@@ -798,6 +707,8 @@ function backToForm(){
 addExperience();
 addEducation();
 addLanguage();
+addCert();
+addPortfolio();
 setUILang('th');
 </script>
 </body>
