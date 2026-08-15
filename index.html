@@ -146,6 +146,7 @@
     <div class="resume-toolbar">
       <div class="template-toggle">
         <button type="button" id="btnClassic" class="active" onclick="setTemplate('classic')" data-t="tplClassic">คลาสสิก</button>
+        <button type="button" id="btnPhoto" onclick="setTemplate('photo')" data-t="tplPhoto">มีรูป</button>
         <button type="button" id="btnModern" onclick="setTemplate('modern')" data-t="tplModern">โมเดิร์น</button>
       </div>
       <div class="actions">
@@ -185,7 +186,7 @@ const UI_TEXT = {
     rExperience:"ประสบการณ์ทำงาน", rEducation:"การศึกษา",
     placeholderName:"ชื่อ-นามสกุล", placeholderTitle:"ตำแหน่งงานที่ต้องการ",
     levelOptions:["เริ่มต้น","ปานกลาง","ดี","คล่องแคล่ว","เจ้าของภาษา"],
-    tplClassic:"คลาสสิก", tplModern:"โมเดิร์น",
+    tplClassic:"คลาสสิก", tplPhoto:"มีรูป", tplModern:"โมเดิร์น",
     secCerts:"ใบรับรอง / ประกาศนียบัตร", addCert:"+ เพิ่มใบรับรอง",
     certName:"ชื่อใบรับรอง / หลักสูตร", certIssuer:"ออกโดย (สถาบัน/องค์กร)", certDate:"วันที่ได้รับ", certLink:"ลิงก์ตรวจสอบ (ถ้ามี)",
     secPortfolio:"ผลงาน", addPortfolio:"+ เพิ่มผลงาน",
@@ -216,7 +217,7 @@ const UI_TEXT = {
     rExperience:"Experience", rEducation:"Education",
     placeholderName:"Your Name", placeholderTitle:"Desired Job Title",
     levelOptions:["Basic","Intermediate","Good","Fluent","Native"],
-    tplClassic:"Classic", tplModern:"Modern",
+    tplClassic:"Classic", tplPhoto:"With Photo", tplModern:"Modern",
     secCerts:"Certificates", addCert:"+ Add Certificate",
     certName:"Certificate / Course Name", certIssuer:"Issued By (Institution/Organization)", certDate:"Date Received", certLink:"Verification Link (optional)",
     secPortfolio:"Portfolio", addPortfolio:"+ Add Project",
@@ -651,6 +652,105 @@ function renderClassic(d){
   `;
 }
 
+function renderPhoto(d){
+  const bulletsOrPlain = (text)=>{
+    const items = toBullets(text);
+    if(!items.length) return '';
+    if(items.length === 1) return `<div class="p-plain">${escapeHtml(items[0])}</div>`;
+    return `<ul>${items.map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+  };
+
+  return `
+    <div class="tpl-photo">
+      <div class="p-header">
+        ${d.photo ? `<img class="p-photo" src="${d.photo}" alt="">` : ''}
+        <div class="p-header-text">
+          <div class="p-name">${escapeHtml(d.name)}</div>
+          ${d.title ? `<div class="p-title">${escapeHtml(d.title)}</div>` : ''}
+          ${d.contactRows.map(c=>`<div class="p-contact-line">${escapeHtml(c)}</div>`).join('')}
+        </div>
+      </div>
+
+      ${d.summary ? `
+      <div class="p-section">
+        <div class="p-section-title">${t('rSummary')}</div>
+        <div class="p-summary">${escapeHtml(d.summary)}</div>
+      </div>` : ''}
+
+      ${d.experiences.length ? `
+      <div class="p-section">
+        <div class="p-section-title">${t('rExperience')}</div>
+        ${d.experiences.map(e=>`
+          <div class="p-entry">
+            <div class="p-entry-row">
+              <span class="p-entry-org">${escapeHtml(e.company)}</span>
+              <span class="p-entry-period">${escapeHtml(e.period)}</span>
+            </div>
+            ${e.role ? `<div class="p-entry-role">${escapeHtml(e.role)}</div>` : ''}
+            ${bulletsOrPlain(e.desc)}
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      ${d.education.length ? `
+      <div class="p-section">
+        <div class="p-section-title">${t('rEducation')}</div>
+        ${d.education.map(e=>`
+          <div class="p-entry">
+            <div class="p-entry-row">
+              <span class="p-entry-org">${escapeHtml(e.school)}</span>
+              <span class="p-entry-period">${escapeHtml(e.period)}</span>
+            </div>
+            ${e.degree ? `<div class="p-entry-role">${escapeHtml(e.degree)}</div>` : ''}
+            ${bulletsOrPlain(e.detail)}
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      ${d.portfolio.length ? `
+      <div class="p-section">
+        <div class="p-section-title">${t('rPortfolio')}</div>
+        ${d.portfolio.map(p=>`
+          <div class="p-entry">
+            <div class="p-entry-row">
+              <span class="p-entry-org">${escapeHtml(p.name)}</span>
+            </div>
+            ${p.link ? `<div class="p-plain" style="margin-bottom:4px;">${escapeHtml(p.link)}</div>` : ''}
+            ${bulletsOrPlain(p.desc)}
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      ${d.skills.length ? `
+      <div class="p-section">
+        <div class="p-section-title">${t('rSkills')}</div>
+        <div class="p-skills-line">${d.skills.map(escapeHtml).join(' &nbsp;•&nbsp; ')}</div>
+      </div>` : ''}
+
+      ${d.languages.length ? `
+      <div class="p-section">
+        <div class="p-section-title">${t('rLanguages')}</div>
+        <div class="p-lang-line">${d.languages.map(l=>`<b>${escapeHtml(l.name)}</b> (${escapeHtml(l.level)})`).join(' &nbsp;•&nbsp; ')}</div>
+      </div>` : ''}
+
+      ${d.certs.length ? `
+      <div class="p-section">
+        <div class="p-section-title">${t('rCerts')}</div>
+        ${d.certs.map(c=>`
+          <div class="p-entry">
+            <div class="p-entry-row">
+              <span class="p-entry-org">${escapeHtml(c.name)}</span>
+              <span class="p-entry-period">${escapeHtml(c.date)}</span>
+            </div>
+            ${c.issuer ? `<div class="p-entry-role">${escapeHtml(c.issuer)}</div>` : ''}
+            ${c.link ? `<div class="p-plain">${escapeHtml(c.link)}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>` : ''}
+    </div>
+  `;
+}
+
 function renderModern(d){
   return `
     <div class="tpl-modern">
@@ -746,12 +846,17 @@ function renderModern(d){
 
 function renderResumeSheet(){
   const sheet = document.getElementById('resumeSheet');
-  sheet.innerHTML = currentTemplate === 'classic' ? renderClassic(lastResumeData) : renderModern(lastResumeData);
+  let html;
+  if(currentTemplate === 'classic') html = renderClassic(lastResumeData);
+  else if(currentTemplate === 'photo') html = renderPhoto(lastResumeData);
+  else html = renderModern(lastResumeData);
+  sheet.innerHTML = html;
 }
 
 function setTemplate(tpl){
   currentTemplate = tpl;
   document.getElementById('btnClassic').classList.toggle('active', tpl==='classic');
+  document.getElementById('btnPhoto').classList.toggle('active', tpl==='photo');
   document.getElementById('btnModern').classList.toggle('active', tpl==='modern');
   if(lastResumeData) renderResumeSheet();
 }
