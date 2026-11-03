@@ -17,6 +17,13 @@
       <div class="brand-mark">CV</div>
       <div class="brand-name" id="brandLabel">Resume Builder</div>
     </div>
+    <div class="data-actions">
+      <span class="save-status" id="saveStatus" aria-live="polite"></span>
+      <button type="button" class="mini-btn" onclick="exportJSON()" data-t="btnExport">ส่งออก JSON</button>
+      <button type="button" class="mini-btn" onclick="document.getElementById('importInput').click()" data-t="btnImport">นำเข้า JSON</button>
+      <button type="button" class="mini-btn mini-danger" onclick="clearAllData()" data-t="btnClear">ล้างข้อมูล</button>
+      <input type="file" id="importInput" accept=".json,application/json" style="display:none;" onchange="importJSON(event)">
+    </div>
     <div class="lang-toggle">
       <button type="button" id="btnTH" class="active" onclick="setUILang('th')">ไทย</button>
       <button type="button" id="btnEN" onclick="setUILang('en')">English</button>
@@ -135,7 +142,7 @@
         <button type="button" class="add-btn" onclick="addPortfolio()" data-t="addPortfolio">+ เพิ่มผลงาน</button>
       </div>
 
-      <div class="submit-row">
+      <div class="submit-row generate-row">
         <button type="button" class="btn btn-primary" onclick="generateResume()" data-t="btnGenerate">สร้างเรซูเม่</button>
       </div>
     </form>
@@ -150,7 +157,7 @@
         <button type="button" id="btnModern" onclick="setTemplate('modern')" data-t="tplModern">โมเดิร์น</button>
       </div>
       <div class="actions">
-        <button class="btn btn-ghost" onclick="backToForm()" data-t="btnEdit">← แก้ไขข้อมูล</button>
+        <button class="btn btn-ghost back-btn" onclick="backToForm()" data-t="btnEdit">← แก้ไขข้อมูล</button>
         <button class="btn btn-primary" onclick="window.print()" data-t="btnPrint">พิมพ์ / บันทึกเป็น PDF</button>
       </div>
     </div>
@@ -225,6 +232,36 @@ const UI_TEXT = {
     rCerts:"Certificates", rPortfolio:"Portfolio"
   }
 };
+Object.assign(UI_TEXT.th,{
+  btnExport:"ส่งออก JSON", btnImport:"นำเข้า JSON", btnClear:"ล้างข้อมูล",
+  saved:"บันทึกอัตโนมัติแล้ว", savedNoPhoto:"บันทึกแล้ว (ไม่รวมรูป: พื้นที่เก็บข้อมูลเต็ม)", saveFail:"บันทึกอัตโนมัติไม่ได้",
+  restored:"กู้คืนข้อมูลที่บันทึกไว้แล้ว", importOk:"นำเข้าข้อมูลสำเร็จ", importErr:"ไฟล์ไม่ถูกต้อง นำเข้าไม่ได้",
+  confirmImport:"การนำเข้าจะแทนที่ข้อมูลที่กรอกอยู่ ต้องการดำเนินการต่อหรือไม่?",
+  confirmClear:"ต้องการล้างข้อมูลทั้งหมดที่กรอกและที่บันทึกไว้ใช่หรือไม่? (แนะนำให้ส่งออก JSON สำรองไว้ก่อน)",
+  imgErr:"อ่านไฟล์รูปไม่ได้",
+  errEmail:"รูปแบบอีเมลไม่ถูกต้อง เช่น name@email.com",
+  errPhone:"เบอร์โทรไม่ถูกต้อง ใช้ตัวเลข 8–15 หลัก (ใส่ + - ( ) และเว้นวรรคได้)",
+  errLink:"ลิงก์ไม่ถูกต้อง เช่น linkedin.com/in/yourname",
+  warnPeriod:"ปีเริ่มต้นมากกว่าปีสิ้นสุด โปรดตรวจสอบ",
+  moveUp:"เลื่อนขึ้น", moveDown:"เลื่อนลง",
+  showInResume:"แสดงในเรซูเม่",
+  hiddenNote:"ซ่อนอยู่ — หัวข้อนี้จะไม่แสดงในเรซูเม่ (ข้อมูลที่กรอกยังถูกเก็บไว้)"
+});
+Object.assign(UI_TEXT.en,{
+  btnExport:"Export JSON", btnImport:"Import JSON", btnClear:"Clear data",
+  saved:"Auto-saved", savedNoPhoto:"Saved (photo not included: storage full)", saveFail:"Auto-save failed",
+  restored:"Restored your saved data", importOk:"Imported successfully", importErr:"Invalid file. Could not import.",
+  confirmImport:"Importing will replace what you have entered. Continue?",
+  confirmClear:"Clear all entered and saved data? (Consider exporting a JSON backup first.)",
+  imgErr:"Could not read the image file.",
+  errEmail:"Invalid email format, e.g. name@email.com",
+  errPhone:"Invalid phone number. Use 8–15 digits (+ - ( ) and spaces allowed)",
+  errLink:"Invalid link, e.g. linkedin.com/in/yourname",
+  warnPeriod:"Start year is after end year. Please check.",
+  moveUp:"Move up", moveDown:"Move down",
+  showInResume:"Show in resume",
+  hiddenNote:"Hidden — this section won't appear in your resume (your entries are kept)"
+});
 let uiLang = 'th';
 let skills = [];
 let profilePhotoDataUrl = null;
@@ -245,17 +282,38 @@ function handlePhotoUpload(e){
   }
   const reader = new FileReader();
   reader.onload = function(ev){
-    profilePhotoDataUrl = ev.target.result;
-    renderPhotoPreview();
-    if(lastResumeData){ lastResumeData.photo = profilePhotoDataUrl; renderResumeSheet(); }
+    downscaleImage(ev.target.result, 800, function(url){
+      if(!url){ alert(t('imgErr')); return; }
+      profilePhotoDataUrl = url;
+      renderPhotoPreview();
+      if(lastResumeData){ lastResumeData.photo = profilePhotoDataUrl; renderResumeSheet(); }
+      onFormChanged();
+    });
   };
   reader.readAsDataURL(file);
+}
+/* shrink photo (max side px, JPEG) so it fits in localStorage */
+function downscaleImage(dataUrl, maxSide, cb){
+  const img = new Image();
+  img.onload = function(){
+    const r = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.width * r));
+    c.height = Math.max(1, Math.round(img.height * r));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    cb(c.toDataURL('image/jpeg', 0.88));
+  };
+  img.onerror = function(){ cb(null); };
+  img.src = dataUrl;
 }
 function removePhoto(){
   profilePhotoDataUrl = null;
   document.getElementById('photoInput').value = '';
   renderPhotoPreview();
   if(lastResumeData){ lastResumeData.photo = null; renderResumeSheet(); }
+  onFormChanged();
 }
 function renderPhotoPreview(){
   const img = document.getElementById('photoImg');
@@ -306,7 +364,11 @@ function setUILang(lang){
     sel.innerHTML = opts.map(o=>`<option>${o}</option>`).join('');
     sel.selectedIndex = current >=0 ? current : 2;
   });
-  if(typeof lastResumeData !== 'undefined' && lastResumeData) renderResumeSheet();
+  document.querySelectorAll('.move-up').forEach(el=>{ el.title = el.ariaLabel = t('moveUp'); });
+  document.querySelectorAll('.move-down').forEach(el=>{ el.title = el.ariaLabel = t('moveDown'); });
+  document.querySelectorAll('.field-error[data-err]').forEach(el=>{ el.textContent = t(el.getAttribute('data-err')); });
+  if(lastResumeData || isSplit()){ lastResumeData = collectResumeData(); renderResumeSheet(); }
+  onFormChanged();
 }
 
 /* ---------------- Repeatable: Experience ---------------- */
@@ -318,7 +380,7 @@ function addExperience(prefill){
   div.className = 'repeat-item';
   div.id = id;
   div.innerHTML = `
-    <button type="button" class="remove-btn dyn-remove" onclick="document.getElementById('${id}').remove()">${t('remove')}</button>
+    <button type="button" class="remove-btn dyn-remove" onclick="removeItem('${id}')">${t('remove')}</button>
     <div class="grid2">
       <div class="field">
         <label class="dyn-label" data-key="expRole">${t('expRole')}</label>
@@ -339,6 +401,7 @@ function addExperience(prefill){
     </div>
   `;
   document.getElementById('expList').appendChild(div);
+  decorateItem(div);
 }
 
 /* ---------------- Repeatable: Education ---------------- */
@@ -350,7 +413,7 @@ function addEducation(){
   div.className = 'repeat-item';
   div.id = id;
   div.innerHTML = `
-    <button type="button" class="remove-btn dyn-remove" onclick="document.getElementById('${id}').remove()">${t('remove')}</button>
+    <button type="button" class="remove-btn dyn-remove" onclick="removeItem('${id}')">${t('remove')}</button>
     <div class="grid2">
       <div class="field">
         <label class="dyn-label" data-key="eduDegree">${t('eduDegree')}</label>
@@ -371,6 +434,7 @@ function addEducation(){
     </div>
   `;
   document.getElementById('eduList').appendChild(div);
+  decorateItem(div);
 }
 
 /* ---------------- Repeatable: Languages ---------------- */
@@ -383,7 +447,7 @@ function addLanguage(){
   div.id = id;
   const opts = t('levelOptions');
   div.innerHTML = `
-    <button type="button" class="remove-btn dyn-remove" onclick="document.getElementById('${id}').remove()">${t('remove')}</button>
+    <button type="button" class="remove-btn dyn-remove" onclick="removeItem('${id}')">${t('remove')}</button>
     <div class="grid2">
       <div class="field">
         <label class="dyn-label" data-key="langName">${t('langName')}</label>
@@ -398,6 +462,7 @@ function addLanguage(){
     </div>
   `;
   document.getElementById('langList').appendChild(div);
+  decorateItem(div);
 }
 
 /* ---------------- Repeatable: Certificates ---------------- */
@@ -409,7 +474,7 @@ function addCert(){
   div.className = 'repeat-item';
   div.id = id;
   div.innerHTML = `
-    <button type="button" class="remove-btn dyn-remove" onclick="document.getElementById('${id}').remove()">${t('remove')}</button>
+    <button type="button" class="remove-btn dyn-remove" onclick="removeItem('${id}')">${t('remove')}</button>
     <div class="grid2">
       <div class="field">
         <label class="dyn-label" data-key="certName">${t('certName')}</label>
@@ -432,6 +497,7 @@ function addCert(){
     </div>
   `;
   document.getElementById('certList').appendChild(div);
+  decorateItem(div);
 }
 
 /* ---------------- Repeatable: Portfolio / Projects ---------------- */
@@ -443,7 +509,7 @@ function addPortfolio(){
   div.className = 'repeat-item';
   div.id = id;
   div.innerHTML = `
-    <button type="button" class="remove-btn dyn-remove" onclick="document.getElementById('${id}').remove()">${t('remove')}</button>
+    <button type="button" class="remove-btn dyn-remove" onclick="removeItem('${id}')">${t('remove')}</button>
     <div class="grid2">
       <div class="field">
         <label class="dyn-label" data-key="portfolioName">${t('portfolioName')}</label>
@@ -460,6 +526,7 @@ function addPortfolio(){
     </div>
   `;
   document.getElementById('portfolioList').appendChild(div);
+  decorateItem(div);
 }
 
 /* ---------------- Skills tags ---------------- */
@@ -470,6 +537,7 @@ function commitSkillText(input){
   const parts = raw.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
   parts.forEach(p=> skills.push(p));
   renderSkills();
+  onFormChanged();
   input.value = '';
 }
 function handleTagKey(e, type){
@@ -489,7 +557,7 @@ function renderSkills(){
     wrap.insertBefore(tag, input);
   });
 }
-function removeSkill(i){ skills.splice(i,1); renderSkills(); }
+function removeSkill(i){ skills.splice(i,1); renderSkills(); onFormChanged(); }
 
 function escapeHtml(str){
   const d = document.createElement('div');
@@ -548,7 +616,20 @@ function collectResumeData(){
   if(location) contactRows.push(location);
   if(link) contactRows.push(link);
 
-  return { name, title, contactRows, summary, experiences, education, languages, certs, portfolio, skills: skills.slice(), photo: profilePhotoDataUrl };
+  const hide = {};
+  hiddenKeys().forEach(k => { hide[k] = true; });
+  return {
+    name, title, contactRows,
+    summary: hide.summary ? '' : summary,
+    experiences: hide.experience ? [] : experiences,
+    education: hide.education ? [] : education,
+    languages: hide.languages ? [] : languages,
+    certs: hide.certs ? [] : certs,
+    portfolio: hide.portfolio ? [] : portfolio,
+    skills: hide.skills ? [] : skills.slice(),
+    photo: profilePhotoDataUrl,
+    hide
+  };
 }
 
 /* turn a textarea's line breaks into bullet points */
@@ -764,6 +845,7 @@ function renderModern(d){
           ${d.contactRows.length ? d.contactRows.map(c=>`<div class="r-contact-item">${escapeHtml(c)}</div>`).join('') : `<div class="empty-note">—</div>`}
         </div>
 
+        ${!d.hide.skills ? `
         <div class="r-block">
           <div class="r-block-title">${t('rSkills')}</div>
           ${d.skills.length ? d.skills.map(s=>`
@@ -771,13 +853,16 @@ function renderModern(d){
               <div class="r-skill-bar"><div class="r-skill-fill" style="width:82%"></div></div>
             </div>`).join('') : `<div class="empty-note">—</div>`}
         </div>
+        ` : ''}
 
+        ${!d.hide.languages ? `
         <div class="r-block">
           <div class="r-block-title">${t('rLanguages')}</div>
           ${d.languages.length ? d.languages.map(l=>`
             <div class="r-lang-row"><span>${escapeHtml(l.name)}</span><span>${escapeHtml(l.level)}</span></div>
           `).join('') : `<div class="empty-note">—</div>`}
         </div>
+        ` : ''}
 
         ${d.certs.length ? `
         <div class="r-block">
@@ -798,6 +883,7 @@ function renderModern(d){
           <div class="r-summary">${escapeHtml(d.summary)}</div>
         </div>` : ''}
 
+        ${!d.hide.experience ? `
         <div class="r-block">
           <div class="r-block-title">${t('rExperience')}</div>
           ${d.experiences.length ? d.experiences.map(e=>`
@@ -811,7 +897,9 @@ function renderModern(d){
             </div>
           `).join('') : `<div class="empty-note">—</div>`}
         </div>
+        ` : ''}
 
+        ${!d.hide.education ? `
         <div class="r-block">
           <div class="r-block-title">${t('rEducation')}</div>
           ${d.education.length ? d.education.map(e=>`
@@ -825,6 +913,7 @@ function renderModern(d){
             </div>
           `).join('') : `<div class="empty-note">—</div>`}
         </div>
+        ` : ''}
 
         ${d.portfolio.length ? `
         <div class="r-block">
@@ -859,11 +948,14 @@ function setTemplate(tpl){
   document.getElementById('btnPhoto').classList.toggle('active', tpl==='photo');
   document.getElementById('btnModern').classList.toggle('active', tpl==='modern');
   if(lastResumeData) renderResumeSheet();
+  onFormChanged();
 }
 
 function generateResume(){
   const skillInputEl = document.getElementById('skillInput');
   if(skillInputEl && skillInputEl.value.trim()) commitSkillText(skillInputEl);
+  const bad = validateAll();
+  if(bad){ bad.scrollIntoView({block:'center'}); bad.focus(); return; }
   lastResumeData = collectResumeData();
   renderResumeSheet();
   document.getElementById('formScreen').style.display = 'none';
@@ -877,13 +969,330 @@ function backToForm(){
   window.scrollTo(0,0);
 }
 
+/* ==================================================================
+   State, auto-save (localStorage), JSON export/import, live preview
+   ================================================================== */
+const STORAGE_KEY = 'resumeBuilder.v1';
+const LIST_IDS = ['expList','eduList','langList','certList','portfolioList'];
+let storageReady = false;   // false until saved data has been restored (prevents overwriting it with blanks)
+let saveTimer = null, previewTimer = null, statusTimer = null;
+
+function isSplit(){ return document.querySelector('.app').classList.contains('split'); }
+
+function getFormState(){
+  const v = id => document.getElementById(id).value;
+  const items = (listId, fn) => Array.from(document.querySelectorAll('#'+listId+' .repeat-item')).map(fn);
+  const q = (el, sel) => el.querySelector(sel).value;
+  return {
+    v: 1, hidden: hiddenKeys(), uiLang, template: currentTemplate, photo: profilePhotoDataUrl, skills: skills.slice(),
+    personal: { name:v('f_name'), title:v('f_title'), email:v('f_email'), phone:v('f_phone'), location:v('f_location'), link:v('f_link') },
+    summary: v('f_summary'),
+    experiences: items('expList', el=>({ role:q(el,'.exp-role'), company:q(el,'.exp-company'), period:q(el,'.exp-period'), desc:q(el,'.exp-desc') })),
+    education: items('eduList', el=>({ degree:q(el,'.edu-degree'), school:q(el,'.edu-school'), period:q(el,'.edu-period'), detail:q(el,'.edu-detail') })),
+    languages: items('langList', el=>({ name:q(el,'.lang-name'), levelIdx:el.querySelector('.lang-level').selectedIndex })),
+    certs: items('certList', el=>({ name:q(el,'.cert-name'), issuer:q(el,'.cert-issuer'), date:q(el,'.cert-date'), link:q(el,'.cert-link') })),
+    portfolio: items('portfolioList', el=>({ name:q(el,'.portfolio-name'), link:q(el,'.portfolio-link'), desc:q(el,'.portfolio-desc') }))
+  };
+}
+
+function isValidState(s){
+  return s && typeof s === 'object' && s.v === 1 && s.personal && typeof s.personal === 'object';
+}
+
+function applyFormState(s){
+  const str = x => (typeof x === 'string' ? x : '');
+  const arr = x => (Array.isArray(x) ? x : []);
+  const setv = (id, val) => { document.getElementById(id).value = str(val); };
+  const P = s.personal || {};
+  setv('f_name',P.name); setv('f_title',P.title); setv('f_email',P.email);
+  setv('f_phone',P.phone); setv('f_location',P.location); setv('f_link',P.link);
+  setv('f_summary', s.summary);
+
+  LIST_IDS.forEach(id => { document.getElementById(id).innerHTML = ''; });
+  const fill = (listId, add, data, setter) => {
+    const rows = arr(data);
+    if(!rows.length){ add(); return; }
+    rows.forEach(d => {
+      add();
+      const el = document.getElementById(listId).lastElementChild;
+      setter(el, (d && typeof d === 'object') ? d : {});
+    });
+  };
+  const sv = (el, sel, val) => { el.querySelector(sel).value = str(val); };
+  fill('expList', addExperience, s.experiences, (el,d)=>{ sv(el,'.exp-role',d.role); sv(el,'.exp-company',d.company); sv(el,'.exp-period',d.period); sv(el,'.exp-desc',d.desc); });
+  fill('eduList', addEducation, s.education, (el,d)=>{ sv(el,'.edu-degree',d.degree); sv(el,'.edu-school',d.school); sv(el,'.edu-period',d.period); sv(el,'.edu-detail',d.detail); });
+  fill('langList', addLanguage, s.languages, (el,d)=>{ sv(el,'.lang-name',d.name); const sel = el.querySelector('.lang-level'); const i = Number.isInteger(d.levelIdx) ? d.levelIdx : 2; if(i>=0 && i<sel.options.length) sel.selectedIndex = i; });
+  fill('certList', addCert, s.certs, (el,d)=>{ sv(el,'.cert-name',d.name); sv(el,'.cert-issuer',d.issuer); sv(el,'.cert-date',d.date); sv(el,'.cert-link',d.link); });
+  fill('portfolioList', addPortfolio, s.portfolio, (el,d)=>{ sv(el,'.portfolio-name',d.name); sv(el,'.portfolio-link',d.link); sv(el,'.portfolio-desc',d.desc); });
+
+  skills = arr(s.skills).filter(x => typeof x === 'string' && x.trim()).map(x => x.trim());
+  renderSkills();
+
+  profilePhotoDataUrl = (typeof s.photo === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/.test(s.photo)) ? s.photo : null;
+  renderPhotoPreview();
+
+  const tpl = ['classic','photo','modern'].includes(s.template) ? s.template : 'classic';
+  const lang = (s.uiLang === 'en') ? 'en' : 'th';
+  const hid = arr(s.hidden);
+  document.querySelectorAll('[data-sec]').forEach(cb=> setSectionHidden(cb.dataset.sec, hid.includes(cb.dataset.sec)));
+  clearValidation();
+  setTemplate(tpl);
+  setUILang(lang);
+}
+
+/* ---- auto-save ---- */
+function showStatus(msg, isError){
+  const el = document.getElementById('saveStatus');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.toggle('err', !!isError);
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(()=>{ el.textContent = ''; }, 3500);
+}
+function saveNow(){
+  if(!storageReady) return;
+  const state = getFormState();
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    showStatus(t('saved'));
+  }catch(e){
+    try{
+      state.photo = null;                         // most likely too large: retry without the photo
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      showStatus(t('savedNoPhoto'), true);
+    }catch(e2){
+      showStatus(t('saveFail'), true);
+    }
+  }
+}
+function loadSaved(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const s = JSON.parse(raw);
+    if(!isValidState(s)) return false;
+    applyFormState(s);
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ---- live preview ---- */
+function refreshPreview(){
+  const visible = isSplit() || document.getElementById('resumeScreen').style.display === 'block';
+  if(!visible) return;
+  lastResumeData = collectResumeData();
+  renderResumeSheet();
+}
+function onFormChanged(){
+  if(!storageReady) return;
+  clearTimeout(saveTimer);  saveTimer = setTimeout(saveNow, 400);
+  clearTimeout(previewTimer); previewTimer = setTimeout(refreshPreview, 120);
+}
+function removeItem(id){
+  const el = document.getElementById(id);
+  if(el) el.remove();
+  onFormChanged();
+}
+
+/* ---- JSON export / import / clear ---- */
+function exportJSON(){
+  const state = getFormState();
+  const safeName = (state.personal.name || 'resume').trim().replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 40) || 'resume';
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${safeName}-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function importJSON(e){
+  const input = e.target;
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  if(file.size > 15 * 1024 * 1024){ alert(t('importErr')); return; }
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    let s;
+    try{ s = JSON.parse(ev.target.result); }catch(err){ s = null; }
+    if(!isValidState(s)){ alert(t('importErr')); return; }
+    if(!confirm(t('confirmImport'))) return;
+    applyFormState(s);
+    lastResumeData = collectResumeData();
+    renderResumeSheet();
+    saveNow();
+    showStatus(t('importOk'));
+  };
+  reader.readAsText(file);
+}
+function clearAllData(){
+  if(!confirm(t('confirmClear'))) return;
+  clearTimeout(saveTimer);
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  applyFormState({ v:1, personal:{}, uiLang, template:currentTemplate });
+  refreshPreview();
+  window.scrollTo(0,0);
+}
+
+/* ---------------- Show / hide whole sections ---------------- */
+const SECTION_MAP = { secSummary:'summary', secExperience:'experience', secEducation:'education',
+                      secSkills:'skills', secLanguages:'languages', secCerts:'certs', secPortfolio:'portfolio' };
+function hiddenKeys(){
+  return Array.from(document.querySelectorAll('[data-sec]')).filter(c => !c.checked).map(c => c.dataset.sec);
+}
+function setSectionHidden(key, hidden){
+  const cb = document.querySelector(`[data-sec="${key}"]`);
+  if(!cb) return;
+  cb.checked = !hidden;
+  const sec = cb.closest('.section');
+  sec.classList.toggle('sec-hidden', !!hidden);
+  if(hidden) sec.querySelectorAll('input').forEach(el => setFieldError(el, null));  // hidden fields must not keep stale errors
+}
+function initSectionToggles(){
+  document.querySelectorAll('#resumeForm .section').forEach(sec=>{
+    const h = sec.querySelector('.section-title');
+    const key = h && SECTION_MAP[h.getAttribute('data-t')];
+    if(!key) return;
+    const lab = document.createElement('label');
+    lab.className = 'sec-toggle';
+    lab.innerHTML = `<input type="checkbox" checked data-sec="${key}"><span data-t="showInResume"></span>`;
+    sec.querySelector('.section-head').appendChild(lab);
+    const note = document.createElement('div');
+    note.className = 'sec-hidden-note';
+    note.setAttribute('data-t', 'hiddenNote');
+    sec.appendChild(note);
+    lab.querySelector('input').addEventListener('change', e => setSectionHidden(key, !e.target.checked));
+  });
+}
+
+/* ---------------- Reorder items (up / down) ---------------- */
+function decorateItem(div){
+  const tools = document.createElement('div');
+  tools.className = 'item-tools';
+  tools.innerHTML =
+    `<button type="button" class="move-btn move-up" onclick="moveItem('${div.id}',-1)" title="${t('moveUp')}" aria-label="${t('moveUp')}">↑</button>` +
+    `<button type="button" class="move-btn move-down" onclick="moveItem('${div.id}',1)" title="${t('moveDown')}" aria-label="${t('moveDown')}">↓</button>`;
+  const rm = div.querySelector('.remove-btn');
+  if(rm) tools.appendChild(rm);
+  div.insertBefore(tools, div.firstChild);
+}
+function moveItem(id, dir){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const sib = dir < 0 ? el.previousElementSibling : el.nextElementSibling;
+  if(!sib) return;
+  if(dir < 0) el.parentNode.insertBefore(el, sib); else el.parentNode.insertBefore(sib, el);
+  const btn = el.querySelector(dir < 0 ? '.move-up' : '.move-down');
+  if(btn) btn.focus();
+  onFormChanged();
+}
+
+/* ---------------- Validation ---------------- */
+const LINK_RE = /^(https?:\/\/)?([\p{L}\p{N}-]+\.)+[\p{L}\p{N}-]{2,}(:\d+)?([\/?#]\S*)?$/iu;
+function periodOrderWarning(v){
+  const toks = [];
+  const re = /(?:(\d{1,2})[\/.\-])?(?<!\d)(\d{4})(?!\d)/g;
+  let m;
+  while((m = re.exec(v))) toks.push({ y:+m[2], m:m[1] ? +m[1] : 0 });
+  if(toks.length < 2) return null;
+  const a = toks[0], b = toks[toks.length-1];
+  const useMonth = a.m && b.m;
+  const ka = useMonth ? a.y*12 + a.m : a.y, kb = useMonth ? b.y*12 + b.m : b.y;
+  return ka > kb ? 'warnPeriod' : null;
+}
+const VALIDATORS = [
+  { match: el => el.id === 'f_email', check: v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? null : 'errEmail' },
+  { match: el => el.id === 'f_phone', check: v => {
+      if(!/^[0-9+\-\s().]+$/.test(v)) return 'errPhone';
+      const n = v.replace(/\D/g,'').length;
+      return (n >= 8 && n <= 15) ? null : 'errPhone';
+  } },
+  { match: el => el.id === 'f_link' || el.classList.contains('cert-link') || el.classList.contains('portfolio-link'),
+    check: v => LINK_RE.test(v) ? null : 'errLink' },
+  { match: el => el.classList.contains('exp-period') || el.classList.contains('edu-period'),
+    check: periodOrderWarning, warn: true }
+];
+function setFieldError(el, key, warn){
+  let box = el.nextElementSibling;
+  if(!(box && box.classList.contains('field-error'))){
+    if(!key) return;
+    box = document.createElement('div');
+    box.className = 'field-error';
+    box.id = 'err_' + Math.random().toString(36).slice(2, 8);
+    el.insertAdjacentElement('afterend', box);
+  }
+  if(!key){
+    box.remove();
+    el.classList.remove('invalid','warn-input');
+    el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby');
+    return;
+  }
+  box.setAttribute('data-err', key);
+  box.textContent = t(key);
+  box.classList.toggle('warn', !!warn);
+  el.classList.toggle('invalid', !warn);
+  el.classList.toggle('warn-input', !!warn);
+  if(warn) el.removeAttribute('aria-invalid'); else el.setAttribute('aria-invalid','true');
+  el.setAttribute('aria-describedby', box.id);
+}
+/* returns {key, warn} or null; empty values are always valid (all these fields are optional) */
+function validateField(el){
+  const v = el.value.trim();
+  const rule = VALIDATORS.find(r => r.match(el));
+  if(!rule) return null;
+  const key = v ? rule.check(v) : null;
+  setFieldError(el, key, rule.warn);
+  return key ? { key, warn: !!rule.warn } : null;
+}
+function validateAll(){
+  let firstBad = null;
+  document.querySelectorAll('#resumeForm input').forEach(el=>{
+    if(el.closest('.sec-hidden')) return;
+    const r = validateField(el);
+    if(r && !r.warn && !firstBad) firstBad = el;
+  });
+  return firstBad;
+}
+function clearValidation(){
+  document.querySelectorAll('#resumeForm .field-error').forEach(b=>{
+    const el = b.previousElementSibling;
+    if(el){ el.classList.remove('invalid','warn-input'); el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+    b.remove();
+  });
+}
+
 /* ---------------- Init ---------------- */
 addExperience();
 addEducation();
 addLanguage();
 addCert();
 addPortfolio();
+initSectionToggles();
 setUILang('th');
+
+// auto-save + live preview on any edit inside the form
+const formEl = document.getElementById('resumeForm');
+formEl.addEventListener('input', onFormChanged);
+formEl.addEventListener('change', onFormChanged);
+formEl.addEventListener('focusout', e=>{ if(e.target.matches && e.target.matches('input')) validateField(e.target); });
+formEl.addEventListener('input', e=>{   // once a field is flagged, re-check as the user fixes it
+  const el = e.target;
+  if(el.classList && (el.classList.contains('invalid') || el.classList.contains('warn-input'))) validateField(el);
+});
+window.addEventListener('beforeunload', ()=>{ if(saveTimer){ clearTimeout(saveTimer); saveNow(); } });
+
+// side-by-side layout on wide screens
+const splitMQ = window.matchMedia('(min-width: 1280px)');
+function applySplit(){
+  document.querySelector('.app').classList.toggle('split', splitMQ.matches);
+  refreshPreview();
+}
+if(splitMQ.addEventListener) splitMQ.addEventListener('change', applySplit); else splitMQ.addListener(applySplit);
+
+const hadSaved = loadSaved();
+storageReady = true;
+applySplit();
+if(hadSaved) showStatus(t('restored'));
 </script>
 </body>
 </html>
