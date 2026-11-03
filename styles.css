@@ -320,7 +320,7 @@
 
   /* ---------- Split view: form + live preview (wide screens) ---------- */
   .app.split{
-    max-width:1500px; display:grid; grid-template-columns:minmax(440px,520px) minmax(0,1fr);
+    max-width:1500px; display:grid; grid-template-columns:minmax(400px,480px) minmax(0,1fr);
     column-gap:32px; align-items:start;
   }
   .app.split .topbar{ grid-column:1 / -1; }
@@ -370,3 +370,98 @@
   .section.sec-hidden .section-head{ margin-bottom:8px; opacity:.7; }
   .section.sec-hidden > :not(.section-head):not(.sec-hidden-note){ display:none; }
   .section.sec-hidden .sec-hidden-note{ display:block; }
+
+  /* ==================================================
+     Mobile / touch / print fixes
+     ================================================== */
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  .resume-sheet, .resume-sheet *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }  /* keep dark sidebar when printing */
+  .save-status:empty{ display:none; }
+  .print-tip{
+    display:none; font-size:12.5px; line-height:1.65; color:var(--slate); background:#fff;
+    border:1px solid var(--line); border-left:3px solid var(--gold); padding:10px 14px; margin-bottom:16px;
+  }
+  @media (pointer:coarse){ .print-tip{ display:block; } }
+  /* modern template: dark sidebar runs the full height of the sheet */
+  .resume-sheet .tpl-modern{ min-height:1050px; }
+  .resume-sheet.pdf-render .tpl-modern{ min-height:1123px; }
+  .resume-sheet.pdf-render{ width:794px; max-width:794px; min-height:1123px; margin:0; box-shadow:none; border:none; }
+
+  /* bigger touch targets, 16px inputs (stops iOS zooming into focused fields) */
+  @media (pointer:coarse), (max-width:640px){
+    .field input, .field textarea, .field select, .tag-input-wrap input{ font-size:16px; }
+    .field select, .field input{ min-height:44px; }
+    .mini-btn{ min-height:44px; padding:8px 14px; font-size:13.5px; }
+    .lang-toggle button, .template-toggle button{ min-height:44px; }
+    .btn{ min-height:48px; padding:12px 22px; }
+    .add-btn{ min-height:48px; }
+    .photo-upload-btn{ min-height:44px; display:inline-flex; align-items:center; }
+    .photo-remove-btn{ padding:10px 0; }
+    .sec-toggle{ min-height:44px; gap:9px; }
+    .sec-toggle input{ width:22px; height:22px; }
+    .repeat-item{ padding-top:62px; }
+    .item-tools{ top:8px; gap:8px; }
+    .move-btn{ width:44px; height:44px; font-size:18px; }
+    .repeat-item .item-tools .remove-btn{ min-height:44px; min-width:44px; padding:0 8px; font-size:13px; }
+    .tag{ padding:0 0 0 14px; }
+    .tag button{ width:40px; height:40px; padding:0; font-size:18px; }
+  }
+
+  /* phone layout */
+  @media (max-width:640px){
+    .app{ padding:18px 14px 70px; }
+    .topbar{ gap:10px; }
+    .brand{ flex:1; }
+    .data-actions{ order:3; width:100%; margin:0; gap:8px; }
+    .data-actions .mini-btn{ flex:1 1 0; padding:8px 6px; }
+    .save-status{
+      position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:60;
+      background:var(--ink); color:#fff; padding:9px 16px; border-radius:22px; font-size:13px;
+      max-width:90vw; text-align:center; box-shadow:0 2px 10px rgba(19,36,54,.25);
+    }
+    .save-status.err{ background:var(--danger); color:#fff; }
+    h1.page-title{ font-size:22px; }
+    .section{ padding:18px 16px; }
+    .resume-toolbar{ flex-direction:column; align-items:stretch; gap:12px; }
+    .template-toggle{ width:100%; }
+    .template-toggle button{ flex:1; padding:7px 6px; }
+    .resume-toolbar .actions{ flex-wrap:wrap; }
+    .resume-toolbar .actions .btn{ flex:1 1 calc(50% - 5px); padding:12px 8px; font-size:13.5px; }
+    .resume-toolbar .actions .btn-primary{ flex-basis:100%; }
+    .resume-sheet:not(.pdf-render){ min-height:0; }
+    .resume-sheet:not(.pdf-render) .tpl-modern{ grid-template-columns:1fr; min-height:0; }
+    .resume-sheet:not(.pdf-render) .r-sidebar{ padding:28px 22px; }
+    .resume-sheet:not(.pdf-render) .r-main{ padding:26px 22px; }
+    .resume-sheet:not(.pdf-render) .tpl-classic{ padding:32px 22px; }
+    .resume-sheet:not(.pdf-render) .tpl-photo{ padding:28px 22px; }
+  }
+
+  @media print{
+    .resume-sheet{ zoom:1 !important; }
+    .print-tip{ display:none !important; }
+  }
+
+  /* ==================================================
+     Color themes (only inside the resume sheet)
+     ================================================== */
+  .resume-sheet[data-theme]{ --gold:var(--t-acc); --gold-soft:var(--t-soft); --sidebar:var(--t-side); --sidebar-sub:var(--t-sub); }
+  .resume-sheet[data-theme] .tpl-photo{ --pblue:var(--t-acc); }
+  .resume-sheet[data-theme] .r-sidebar .r-block-title{ border-bottom-color:var(--t-line); }
+  .resume-sheet[data-theme] .r-skill-bar{ background:var(--t-line); }
+  .resume-sheet[data-theme] .tpl-classic .c-section-title{ color:var(--t-acc); border-bottom-color:var(--t-acc); }
+  .resume-sheet[data-theme] .tpl-classic .c-photo{ border-color:var(--t-acc); }
+
+  .theme-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; font-size:13px; color:var(--slate); }
+  .swatches{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .swatch{
+    position:relative; width:30px; height:30px; padding:0; border-radius:50%; cursor:pointer;
+    border:2px solid #fff; box-shadow:0 0 0 1px var(--line); transition:.15s;
+  }
+  .swatch{ -webkit-tap-highlight-color:transparent; }
+  .swatch:hover{ box-shadow:0 0 0 1px var(--slate); }
+  .swatch.active{ box-shadow:0 0 0 2px var(--ink); }
+  .swatch:focus-visible, .swatch-custom:focus-within{ outline:2px solid var(--ink); outline-offset:3px; }
+  .swatch-custom{ background:conic-gradient(#e11d48,#f59e0b,#84cc16,#06b6d4,#3b82f6,#a855f7,#e11d48); overflow:hidden; display:inline-block; }
+  .swatch-custom input{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; padding:0; border:0; }
+  @media (pointer:coarse), (max-width:640px){ .swatch{ width:44px; height:44px; } .swatches{ gap:8px; } }
+  @media print{ .theme-bar{ display:none !important; } }
